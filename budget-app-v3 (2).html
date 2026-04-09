@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayCheck Planner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e2e0d8;
+    --text: #1a1916;
+    --text2: #6b6960;
+    --text3: #9b9a92;
+    --accent: #2a5caa;
+    --accent-light: #e8eef8;
+    --green: #1a7a4a;
+    --green-light: #e6f4ec;
+    --red: #b83232;
+    --red-light: #faeaea;
+    --amber: #a05c10;
+    --amber-light: #fdf0e0;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  [data-theme="dark"] {
+    --bg: #141412;
+    --surface: #1e1d1a;
+    --surface2: #272622;
+    --border: #333230;
+    --text: #f0efe9;
+    --text2: #9b9a92;
+    --text3: #6b6960;
+    --accent: #5b8fd4;
+    --accent-light: #1a2640;
+    --green: #3dba75;
+    --green-light: #0e2a1c;
+    --red: #e06060;
+    --red-light: #2a1212;
+    --amber: #e09040;
+    --amber-light: #2a1e0a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ── TOP NAV ── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-brand {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+  .topbar-brand span { color: var(--accent); }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  .icon-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.15s;
+  }
+  .icon-btn:hover { background: var(--border); }
+
+  /* ── PERIOD SELECTOR ── */
+  .period-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .period-label { font-size: 13px; color: var(--text2); font-weight: 500; }
+  .period-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .pill.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .period-nav { display: flex; gap: 4px; margin-left: auto; }
+  .period-nav button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    width: 30px; height: 30px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .period-current {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    min-width: 130px;
+    text-align: center;
+  }
+
+  /* ── LAYOUT ── */
+  .main { max-width: 720px; margin: 0 auto; padding: 16px; }
+
+  /* ── SUMMARY CARDS ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    box-shadow: var(--shadow);
+  }
+  .summary-card .s-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text3);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .summary-card .s-value {
+    font-size: 22px;
+    font-weight: 600;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: -0.5px;
+  }
+  .s-income .s-value { color: var(--green); }
+  .s-spent .s-value { color: var(--red); }
+  .s-remaining .s-value { color: var(--accent); }
+  .s-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 3px;
+  }
+
+  /* ── PROGRESS BAR ── */
+  .budget-progress {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--text2);
+  }
+  .progress-track {
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--green);
+    transition: width 0.4s ease;
+  }
+  .progress-fill.warn { background: var(--amber); }
+  .progress-fill.over { background: var(--red); }
+
+  /* ── SECTION ── */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid transparent;
+    transition: background 0.1s;
+  }
+  .section-header:hover { background: var(--surface2); }
+  .section-header.open { border-bottom-color: var(--border); }
+  .section-header-left {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-icon {
+    width: 32px; height: 32px;
+    border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .icon-income { background: var(--green-light); }
+  .icon-bills { background: var(--red-light); }
+  .icon-fuel { background: var(--amber-light); }
+  .icon-sub { background: var(--accent-light); }
+  .icon-misc { background: var(--surface2); }
+  .section-title { font-weight: 500; font-size: 15px; }
+  .section-total {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text2);
+  }
+  .section-total.income-total { color: var(--green); }
+  .section-total.expense-total { color: var(--red); }
+  .chevron {
+    font-size: 11px;
+    color: var(--text3);
+    transition: transform 0.2s;
+    margin-left: 8px;
+  }
+  .chevron.open { transform: rotate(180deg); }
+  .section-body { display: none; padding: 12px 16px; }
+  .section-body.open { display: block; }
+
+  /* ── ACCOUNT SPLIT ── */
+  .account-split {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+  }
+  .account-tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .account-tag .acct-name { color: var(--text2); }
+  .account-tag .acct-amount {
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    color: var(--green);
+  }
+
+  /* ── ENTRY ROWS ── */
+  .entry-list { display: flex; flex-direction: column; gap: 2px; }
+  .entry-row {
+    display: flex;
+    align-items: center;
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    gap: 10px;
+    transition: background 0.1s;
+  }
+  .entry-row:hover { background: var(--surface2); }
+  .entry-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-check1 { background: #4a90d9; }
+  .dot-check2 { background: #9b59b6; }
+  .dot-both { background: var(--amber); }
+  .entry-name { flex: 1; font-size: 14px; color: var(--text); }
+  .entry-meta { font-size: 12px; color: var(--text3); }
+  .entry-amount {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 70px;
+    text-align: right;
+  }
+  .amt-income { color: var(--green); }
+  .amt-expense { color: var(--red); }
+  .entry-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+  .entry-row:hover .entry-actions { opacity: 1; }
+  .entry-actions button {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 11px;
+    cursor: pointer;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+  }
+  .entry-actions button:hover { background: var(--surface2); }
+  .entry-actions .del-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── ADD BUTTON ── */
+  .add-row {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+  }
+  .btn-add {
+    background: var(--accent-light);
+    border: 1px dashed var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s;
+  }
+  .btn-add:hover { background: var(--accent); color: white; }
+
+  /* ── INLINE ADD FORM ── */
+  .add-form {
+    display: none;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-top: 8px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .add-form.open { display: flex; }
+  .add-form input, .add-form select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    font-size: 13px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+  }
+  .add-form input:focus, .add-form select:focus { border-color: var(--accent); }
+  .add-form .f-name { flex: 2; min-width: 120px; }
+  .add-form .f-amount { flex: 1; min-width: 80px; }
+  .add-form .f-select { flex: 1.5; min-width: 110px; }
+  .add-form .f-actions { display: flex; gap: 6px; width: 100%; }
+  .btn-save {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 7px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+  }
+  .btn-cancel {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 7px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text2);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── LEGEND ── */
+  .check-legend {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 10px; font-size: 12px; color: var(--text2);
+  }
+  .check-legend span { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  /* ── MONTH HISTORY ── */
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .history-table th {
+    text-align: left;
+    padding: 8px 10px;
+    color: var(--text3);
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .history-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  .history-table tr:last-child td { border-bottom: none; }
+  .history-table tr:hover td { background: var(--surface2); }
+  .mono { font-family: 'DM Mono', monospace; font-size: 13px; }
+  .positive { color: var(--green); }
+  .negative { color: var(--red); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: var(--bg);
+    padding: 10px 18px; border-radius: 20px;
+    font-size: 13px; font-weight: 500;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ── TABS ── */
+  .tab-bar {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    padding: 0 16px;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    background: none;
+    border-top: none; border-left: none; border-right: none;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.15s;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── ACCOUNT MANAGER ── */
+  .acct-grid { display: flex; flex-direction: column; gap: 8px; }
+  .acct-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .acct-info .acct-title { font-weight: 500; font-size: 14px; }
+  .acct-info .acct-inst { font-size: 12px; color: var(--text3); margin-top: 2px; }
+  .acct-badge {
+    font-size: 11px; padding: 3px 8px; border-radius: 10px;
+    font-weight: 500;
+  }
+  .badge-checking { background: var(--accent-light); color: var(--accent); }
+  .badge-savings { background: var(--green-light); color: var(--green); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 480px) {
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+    .summary-grid .s-remaining { grid-column: span 2; }
+    .s-value { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-brand">Pay<span>Check</span> Planner</div>
+  <div class="topbar-actions">
+    <button class="icon-btn" onclick="toggleTheme()" title="Toggle dark mode">🌙</button>
+    <button class="icon-btn" onclick="showTab('history')" title="History">📅</button>
+    <button class="icon-btn" onclick="showTab('accounts')" title="Accounts">🏦</button>
+  </div>
+</div>
+
+<!-- PERIOD SELECTOR -->
+<div class="period-bar">
+  <span class="period-label">Pay period:</span>
+  <div class="period-pills">
+    <button class="pill active" id="pill-1st" onclick="setPeriod('1st')">1st – 15th</button>
+    <button class="pill" id="pill-16th" onclick="setPeriod('16th')">16th – EOM</button>
+    <button class="pill" id="pill-month" onclick="setPeriod('month')">Full Month</button>
+  </div>
+  <div class="period-nav">
+    <button onclick="changeMonth(-1)">‹</button>
+    <span class="period-current" id="periodDisplay">April 2026</span>
+    <button onclick="changeMonth(1)">›</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="budget" onclick="showTab('budget')">Budget</button>
+  <button class="tab-btn" data-tab="history" onclick="showTab('history')">Monthly History</button>
+  <button class="tab-btn" data-tab="accounts" onclick="showTab('accounts')">Accounts</button>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- TAB: BUDGET -->
+<!-- ══════════════════════════════════════════ -->
+<div class="tab-content active" id="tab-budget">
+<div class="main">
+
+  <!-- SUMMARY -->
+  <div class="summary-grid">
+    <div class="summary-card s-income">
+      <div class="s-label">Income</div>
+      <div class="s-value" id="sumIncome">$0</div>
+      <div class="s-sub" id="sumIncomeSub">this period</div>
+    </div>
+    <div class="summary-card s-spent">
+      <div class="s-label">Spent</div>
+      <div class="s-value" id="sumSpent">$0</div>
+      <div class="s-sub" id="sumSpentSub">bills + purchases</div>
+    </div>
+    <div class="summary-card s-remaining">
+      <div class="s-label">Remaining</div>
+      <div class="s-value" id="sumRemaining">$0</div>
+      <div class="s-sub" id="sumRemainingSub">available</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS BAR -->
+  <div class="budget-progress">
+    <div class="progress-header">
+      <span>Budget used</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- ── INCOME SECTION ── -->
+  <div class="section" id="sec-income">
+    <div class="section-header" onclick="toggleSection('income')">
+      <div class="section-header-left">
+        <div class="section-icon icon-income">💰</div>
+        <span class="section-title">Income</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="section-total income-total" id="total-income">$0.00</span>
+        <span class="chevron" id="chev-income">▼</span>
+      </div>
+    </div>
+    <div class="section-body" id="body-income">
+
+      <!-- PAYCHECK ENTRY -->
+      <div style="margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Gross Paycheck Amount</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <div style="flex:1;min-width:140px;position:relative;">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;">$</span>
+            <input type="number" id="paycheckAmount" placeholder="0.00" step="0.01"
+              style="width:100%;padding:9px 10px 9px 22px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:15px;font-family:'DM Mono',monospace;"
+              oninput="onPaycheckChange()">
+          </div>
+          <button class="btn-save" onclick="savePaycheck()" style="padding:9px 18px;">Set Paycheck</button>
+        </div>
+        <div style="font-size:12px;color:var(--text3);margin-top:5px;">Enter the total amount of this paycheck. Fixed account deposits will be subtracted automatically.</div>
+      </div>
+
+      <!-- ACCOUNT DEPOSIT BREAKDOWN -->
+      <div id="acct-deposit-breakdown" style="display:none;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Deposit Breakdown</div>
+        <div id="acct-deposit-rows" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+
+      <!-- OTHER INCOME -->
+      <div style="font-size:12px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px;">Other Income Sources</div>
+      <div class="entry-list" id="income-list"></div>
+      <div class="add-row">
+        <button class="btn-add" onclick="openForm('income-form')">+ Add other income source</button>
+      </div>
+      <div class="add-form" id="income-form">
+        <input class="f-name" type="text" id="if-name" placeholder="Description (e.g. Side job, bonus)">
+        <input class="f-amount" type="number" id="if-amount" placeholder="Amount" step="0.01">
+        <select class="f-select" id="if-check">
+          <option value="1st">With Check 1 (1st)</option>
+          <option value="16th">With Check 2 (16th)</option>
+          <option value="both">Both periods</option>
+        </select>
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveEntry('income')">Save</button>
+          <button class="btn-cancel" onclick="closeForm('income-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BILLS SECTION ── -->
+  <div class="section" id="sec-bills">
+    <div class="section-header" onclick="toggleSection('bills')">
+      <div class="section-header-left">
+        <div class="section-icon icon-bills">🧾</div>
+        <span class="section-title">Bills &amp; Loans</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="section-total expense-total" id="total-bills">$0.00</span>
+        <span class="chevron" id="chev-bills">▼</span>
+      </div>
+    </div>
+    <div class="section-body" id="body-bills">
+      <div class="check-legend">
+        <span><i class="legend-dot" style="background:#4a90d9"></i> Check 1</span>
+        <span><i class="legend-dot" style="background:#9b59b6"></i> Check 2</span>
+        <span><i class="legend-dot dot-both"></i> Split (both)</span>
+      </div>
+      <div class="entry-list" id="bills-list"></div>
+      <div class="add-row">
+        <button class="btn-add" onclick="openForm('bills-form')">+ Add bill, loan, or payment</button>
+      </div>
+      <div class="add-form" id="bills-form">
+        <input class="f-name" type="text" id="bf-name" placeholder="Bill name (e.g. Car Loan)">
+        <input class="f-amount" type="number" id="bf-amount" placeholder="Amount" step="0.01">
+        <select class="f-select" id="bf-check">
+          <option value="1st">Check 1 (1st)</option>
+          <option value="16th">Check 2 (16th)</option>
+          <option value="split">Split 50/50</option>
+          <option value="both">Full amount both</option>
+        </select>
+        <select class="f-select" id="bf-category">
+          <option value="loan">Loan</option>
+          <option value="utility">Utility</option>
+          <option value="credit">Credit Card</option>
+          <option value="family">Family</option>
+          <option value="other">Other</option>
+        </select>
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveEntry('bills')">Save</button>
+          <button class="btn-cancel" onclick="closeForm('bills-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SUBSCRIPTIONS ── -->
+  <div class="section" id="sec-subs">
+    <div class="section-header" onclick="toggleSection('subs')">
+      <div class="section-header-left">
+        <div class="section-icon icon-sub">📱</div>
+        <span class="section-title">Subscriptions</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="section-total expense-total" id="total-subs">$0.00</span>
+        <span class="chevron" id="chev-subs">▼</span>
+      </div>
+    </div>
+    <div class="section-body" id="body-subs">
+      <div class="entry-list" id="subs-list"></div>
+      <div class="add-row">
+        <button class="btn-add" onclick="openForm('subs-form')">+ Add subscription</button>
+      </div>
+      <div class="add-form" id="subs-form">
+        <input class="f-name" type="text" id="sf-name" placeholder="Subscription name">
+        <input class="f-amount" type="number" id="sf-amount" placeholder="Monthly cost" step="0.01">
+        <select class="f-select" id="sf-check">
+          <option value="1st">Paid from Check 1</option>
+          <option value="16th">Paid from Check 2</option>
+          <option value="split">Split 50/50</option>
+        </select>
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveEntry('subs')">Save</button>
+          <button class="btn-cancel" onclick="closeForm('subs-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GAS ── -->
+  <div class="section" id="sec-gas">
+    <div class="section-header" onclick="toggleSection('gas')">
+      <div class="section-header-left">
+        <div class="section-icon icon-fuel">⛽</div>
+        <span class="section-title">Gas</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="section-total expense-total" id="total-gas">$0.00</span>
+        <span class="chevron" id="chev-gas">▼</span>
+      </div>
+    </div>
+    <div class="section-body" id="body-gas">
+      <div class="entry-list" id="gas-list"></div>
+      <div class="add-row">
+        <button class="btn-add" onclick="openForm('gas-form')">+ Add gas purchase</button>
+      </div>
+      <div class="add-form" id="gas-form">
+        <input class="f-name" type="text" id="gf-name" placeholder="e.g. Shell – Main car">
+        <input class="f-amount" type="number" id="gf-amount" placeholder="Amount" step="0.01">
+        <input class="f-select" type="date" id="gf-date">
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveEntry('gas')">Save</button>
+          <button class="btn-cancel" onclick="closeForm('gas-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GROCERIES ── -->
+  <div class="section" id="sec-groceries">
+    <div class="section-header" onclick="toggleSection('groceries')">
+      <div class="section-header-left">
+        <div class="section-icon icon-misc">🛒</div>
+        <span class="section-title">Groceries</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="section-total expense-total" id="total-groceries">$0.00</span>
+        <span class="chevron" id="chev-groceries">▼</span>
+      </div>
+    </div>
+    <div class="section-body" id="body-groceries">
+      <div class="entry-list" id="groceries-list"></div>
+      <div class="add-row">
+        <button class="btn-add" onclick="openForm('groceries-form')">+ Add grocery run</button>
+      </div>
+      <div class="add-form" id="groceries-form">
+        <input class="f-name" type="text" id="grof-name" placeholder="e.g. Walmart grocery run">
+        <input class="f-amount" type="number" id="grof-amount" placeholder="Amount" step="0.01">
+        <input class="f-select" type="date" id="grof-date">
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveEntry('groceries')">Save</button>
+          <button class="btn-cancel" onclick="closeForm('groceries-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MISC / RANDOM ── -->
+  <div class="section" id="sec-misc">
+    <div class="section-header" onclick="toggleSection('misc')">
+      <div class="section-header-left">
+        <div class="section-icon icon-misc">🛍️</div>
+        <span class="section-title">Random Purchases</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span class="section-total expense-total" id="total-misc">$0.00</span>
+        <span class="chevron" id="chev-misc">▼</span>
+      </div>
+    </div>
+    <div class="section-body" id="body-misc">
+      <div class="entry-list" id="misc-list"></div>
+      <div class="add-row">
+        <button class="btn-add" onclick="openForm('misc-form')">+ Add purchase (fast food, etc.)</button>
+      </div>
+      <div class="add-form" id="misc-form">
+        <input class="f-name" type="text" id="mf-name" placeholder="e.g. McDonald's">
+        <input class="f-amount" type="number" id="mf-amount" placeholder="Amount" step="0.01">
+        <select class="f-select" id="mf-category">
+          <option value="fastfood">Fast Food</option>
+          <option value="dining">Dining Out</option>
+          <option value="shopping">Shopping</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="medical">Medical</option>
+          <option value="other">Other</option>
+        </select>
+        <input class="f-select" type="date" id="mf-date">
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveEntry('misc')">Save</button>
+          <button class="btn-cancel" onclick="closeForm('misc-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end .main -->
+</div><!-- end #tab-budget -->
+
+<!-- ══════════════════════════════════════════ -->
+<!-- TAB: HISTORY -->
+<!-- ══════════════════════════════════════════ -->
+<div class="tab-content" id="tab-history">
+<div class="main">
+  <div class="section">
+    <div class="section-header open" style="cursor:default;">
+      <div class="section-header-left">
+        <div class="section-icon icon-income">📅</div>
+        <span class="section-title">Monthly History</span>
+      </div>
+    </div>
+    <div class="section-body open" style="padding:0;">
+      <table class="history-table" id="historyTable">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Income</th>
+            <th>Expenses</th>
+            <th>Net</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody">
+          <tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px;">No history saved yet. Use the button below to snapshot this month.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-top:12px;box-shadow:var(--shadow);">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:10px;">
+      When you're done entering data for a month, tap the button below to save a snapshot. Each saved month shows total income, total expenses, and your net balance. You can save the same month multiple times — it will update the existing record.
+    </div>
+    <button class="btn-save" onclick="saveCurrentMonth()" style="padding:10px 24px;font-size:14px;width:100%;">💾 Save This Month to History</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- TAB: ACCOUNTS -->
+<!-- ══════════════════════════════════════════ -->
+<div class="tab-content" id="tab-accounts">
+<div class="main">
+  <div class="section">
+    <div class="section-header open" style="cursor:default;">
+      <div class="section-header-left">
+        <div class="section-icon icon-income">🏦</div>
+        <span class="section-title">My Accounts</span>
+      </div>
+    </div>
+    <div class="section-body open">
+      <div style="background:var(--accent-light);border:1px solid var(--accent);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:12px;font-size:13px;color:var(--accent);">
+        <strong>How accounts work:</strong> Add each bank account below and set a fixed deposit amount — the same amount goes into that account every paycheck. Mark one account as the <strong>Remainder</strong> account; it automatically receives whatever is left after all fixed amounts are subtracted from your gross pay.
+      </div>
+      <div class="acct-grid" id="acct-list"></div>
+      <div class="add-row" style="margin-top:12px;">
+        <button class="btn-add" onclick="openForm('acct-form')">+ Add account / institution</button>
+      </div>
+      <div class="add-form" id="acct-form">
+        <input class="f-name" type="text" id="acf-name" placeholder="Account nickname (e.g. Chase Checking)">
+        <input class="f-name" type="text" id="acf-bank" placeholder="Bank / Institution name">
+        <select class="f-select" id="acf-type">
+          <option value="checking">Checking</option>
+          <option value="savings">Savings</option>
+        </select>
+        <div style="width:100%;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;">
+            <input type="checkbox" id="acf-remainder" onchange="toggleRemainderField()" style="width:auto;cursor:pointer;">
+            This account receives the <strong>remainder</strong> (auto-calculated)
+          </label>
+        </div>
+        <div id="acf-fixed-wrap" style="width:100%;display:flex;gap:8px;align-items:center;">
+          <input class="f-amount" type="number" id="acf-fixed" placeholder="Fixed deposit amount per check" step="0.01" style="flex:1;">
+          <span style="font-size:12px;color:var(--text3);white-space:nowrap;">same every check</span>
+        </div>
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveAccount()">Save Account</button>
+          <button class="btn-cancel" onclick="closeForm('acct-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+let state = {
+  currentMonth: 3,
+  currentYear: 2026,
+  currentPeriod: '1st',
+  accounts: [],
+  data: {}
+};
+
+function periodKey() {
+  return `${state.currentYear}-${String(state.currentMonth+1).padStart(2,'0')}-${state.currentPeriod}`;
+}
+
+function getPeriodData() {
+  const k = periodKey();
+  if (!state.data[k]) {
+    state.data[k] = { income:[], bills:[], subs:[], gas:[], groceries:[], misc:[] };
+  }
+  return state.data[k];
+}
+
+// ══════════════════════════════════════
+// PERSISTENCE
+// ══════════════════════════════════════
+function saveState() {
+  localStorage.setItem('paycheck_planner_v1', JSON.stringify(state));
+}
+
+function loadState() {
+  const saved = localStorage.getItem('paycheck_planner_v1');
+  if (saved) {
+    try { state = JSON.parse(saved); } catch(e) {}
+  }
+}
+
+// ══════════════════════════════════════
+// THEME
+// ══════════════════════════════════════
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+  localStorage.setItem('pcp_theme', isDark ? 'light' : 'dark');
+}
+
+// ══════════════════════════════════════
+// PERIOD / MONTH NAV
+// ══════════════════════════════════════
+function setPeriod(p) {
+  state.currentPeriod = p;
+  ['1st','16th','month'].forEach(x => {
+    document.getElementById('pill-'+x).classList.toggle('active', x===p);
+  });
+  renderAll();
+  saveState();
+}
+
+function changeMonth(dir) {
+  state.currentMonth += dir;
+  if (state.currentMonth > 11) { state.currentMonth = 0; state.currentYear++; }
+  if (state.currentMonth < 0)  { state.currentMonth = 11; state.currentYear--; }
+  updatePeriodDisplay();
+  renderAll();
+  saveState();
+}
+
+function updatePeriodDisplay() {
+  document.getElementById('periodDisplay').textContent = `${MONTHS[state.currentMonth]} ${state.currentYear}`;
+}
+
+// ══════════════════════════════════════
+// TABS
+// ══════════════════════════════════════
+function showTab(t) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  const content = document.getElementById('tab-'+t);
+  if (content) content.classList.add('active');
+  const btn = document.querySelector(`.tab-btn[data-tab="${t}"]`);
+  if (btn) btn.classList.add('active');
+  // Re-render the active tab's content when switching
+  if (t === 'history') renderHistory();
+  if (t === 'accounts') renderAccounts();
+  if (t === 'budget') renderAll();
+  state.activeTab = t;
+  saveState();
+}
+
+// ══════════════════════════════════════
+// SECTIONS TOGGLE
+// ══════════════════════════════════════
+function toggleSection(id) {
+  const body = document.getElementById('body-'+id);
+  const chev = document.getElementById('chev-'+id);
+  const header = body.previousElementSibling;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  chev.classList.toggle('open', !isOpen);
+  header.classList.toggle('open', !isOpen);
+}
+
+// ══════════════════════════════════════
+// FORMS
+// ══════════════════════════════════════
+function openForm(id) {
+  document.getElementById(id).classList.add('open');
+  // Set today's date on date fields
+  const today = new Date().toISOString().split('T')[0];
+  ['gf-date','grof-date','mf-date'].forEach(fid => {
+    const el = document.getElementById(fid);
+    if (el && !el.value) el.value = today;
+  });
+  // Populate account dropdown in income form (legacy - no longer needed)
+  // if (id === 'income-form') populateAccountDropdown();
+}
+
+function closeForm(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function populateAccountDropdown() {
+  const sel = document.getElementById('if-account');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">No specific account</option>';
+  state.accounts.forEach((a,i) => {
+    sel.innerHTML += `<option value="${i}">${a.name}</option>`;
+  });
+}
+
+// ══════════════════════════════════════
+// SAVE ENTRIES
+// ══════════════════════════════════════
+function saveEntry(type) {
+  const d = getPeriodData();
+  let entry = {};
+
+  if (type === 'income') {
+    const name = document.getElementById('if-name').value.trim();
+    const amount = parseFloat(document.getElementById('if-amount').value);
+    const check = document.getElementById('if-check').value;
+    if (!name || isNaN(amount) || amount <= 0) { toast('Please enter name and amount'); return; }
+    entry = { id: Date.now(), name, amount, check };
+    d.income.push(entry);
+    document.getElementById('if-name').value = '';
+    document.getElementById('if-amount').value = '';
+  }
+  else if (type === 'bills') {
+    const name = document.getElementById('bf-name').value.trim();
+    const amount = parseFloat(document.getElementById('bf-amount').value);
+    const check = document.getElementById('bf-check').value;
+    const category = document.getElementById('bf-category').value;
+    if (!name || isNaN(amount) || amount <= 0) { toast('Please enter name and amount'); return; }
+    entry = { id: Date.now(), name, amount, check, category };
+    d.bills.push(entry);
+    document.getElementById('bf-name').value = '';
+    document.getElementById('bf-amount').value = '';
+  }
+  else if (type === 'subs') {
+    const name = document.getElementById('sf-name').value.trim();
+    const amount = parseFloat(document.getElementById('sf-amount').value);
+    const check = document.getElementById('sf-check').value;
+    if (!name || isNaN(amount) || amount <= 0) { toast('Please enter name and amount'); return; }
+    entry = { id: Date.now(), name, amount, check };
+    d.subs.push(entry);
+    document.getElementById('sf-name').value = '';
+    document.getElementById('sf-amount').value = '';
+  }
+  else if (type === 'gas') {
+    const name = document.getElementById('gf-name').value.trim() || 'Gas';
+    const amount = parseFloat(document.getElementById('gf-amount').value);
+    const date = document.getElementById('gf-date').value;
+    if (isNaN(amount) || amount <= 0) { toast('Please enter an amount'); return; }
+    entry = { id: Date.now(), name, amount, date };
+    d.gas.push(entry);
+    document.getElementById('gf-amount').value = '';
+  }
+  else if (type === 'groceries') {
+    const name = document.getElementById('grof-name').value.trim() || 'Groceries';
+    const amount = parseFloat(document.getElementById('grof-amount').value);
+    const date = document.getElementById('grof-date').value;
+    if (isNaN(amount) || amount <= 0) { toast('Please enter an amount'); return; }
+    entry = { id: Date.now(), name, amount, date };
+    d.groceries.push(entry);
+    document.getElementById('grof-amount').value = '';
+  }
+  else if (type === 'misc') {
+    const name = document.getElementById('mf-name').value.trim();
+    const amount = parseFloat(document.getElementById('mf-amount').value);
+    const category = document.getElementById('mf-category').value;
+    const date = document.getElementById('mf-date').value;
+    if (!name || isNaN(amount) || amount <= 0) { toast('Please enter name and amount'); return; }
+    entry = { id: Date.now(), name, amount, category, date };
+    d.misc.push(entry);
+    document.getElementById('mf-name').value = '';
+    document.getElementById('mf-amount').value = '';
+  }
+
+  saveState();
+  renderAll();
+  toast('Saved!');
+}
+
+function deleteEntry(type, id) {
+  const d = getPeriodData();
+  d[type] = d[type].filter(e => e.id !== id);
+  saveState();
+  renderAll();
+  toast('Deleted');
+}
+
+// ══════════════════════════════════════
+// ACCOUNTS
+// ══════════════════════════════════════
+function toggleRemainderField() {
+  const isRemainder = document.getElementById('acf-remainder').checked;
+  document.getElementById('acf-fixed-wrap').style.display = isRemainder ? 'none' : 'flex';
+}
+
+function saveAccount() {
+  const name = document.getElementById('acf-name').value.trim();
+  const bank = document.getElementById('acf-bank').value.trim();
+  const type = document.getElementById('acf-type').value;
+  const isRemainder = document.getElementById('acf-remainder').checked;
+  const fixedAmt = parseFloat(document.getElementById('acf-fixed').value);
+  if (!name) { toast('Please enter account name'); return; }
+  if (!isRemainder && (isNaN(fixedAmt) || fixedAmt < 0)) { toast('Please enter a fixed deposit amount (or mark as Remainder)'); return; }
+  // Only one remainder account allowed
+  if (isRemainder && state.accounts.some(a => a.isRemainder)) {
+    toast('You already have a Remainder account. Edit or remove it first.'); return;
+  }
+  state.accounts.push({ name, bank, type, isRemainder, fixedAmt: isRemainder ? 0 : fixedAmt });
+  document.getElementById('acf-name').value = '';
+  document.getElementById('acf-bank').value = '';
+  document.getElementById('acf-fixed').value = '';
+  document.getElementById('acf-remainder').checked = false;
+  document.getElementById('acf-fixed-wrap').style.display = 'flex';
+  saveState();
+  renderAccounts();
+  closeForm('acct-form');
+  renderAll();
+  toast('Account added');
+}
+
+function renderAccounts() {
+  const list = document.getElementById('acct-list');
+  if (!state.accounts.length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0;">No accounts added yet. Use the button below to add your first account.</div>';
+    return;
+  }
+  list.innerHTML = state.accounts.map((a,i) => `
+    <div class="acct-card">
+      <div class="acct-info">
+        <div class="acct-title">${a.name} ${a.isRemainder ? '<span style="font-size:11px;background:var(--amber-light);color:var(--amber);padding:2px 6px;border-radius:4px;font-weight:500;">REMAINDER</span>' : ''}</div>
+        <div class="acct-inst">${a.bank || 'No institution'}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--green);font-weight:500;">
+          ${a.isRemainder ? 'Auto-calculated' : '$'+a.fixedAmt.toFixed(2)+'/check'}
+        </span>
+        <span class="acct-badge ${a.type==='savings'?'badge-savings':'badge-checking'}">${a.type}</span>
+        <button class="btn-cancel" onclick="editAccount(${i})" style="padding:4px 8px;font-size:11px;">Edit</button>
+        <button class="btn-cancel" onclick="deleteAccount(${i})" style="padding:4px 8px;font-size:11px;border-color:var(--red);color:var(--red);">Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function editAccount(i) {
+  const a = state.accounts[i];
+  // Remove and re-open form pre-filled
+  state.accounts.splice(i, 1);
+  saveState();
+  renderAccounts();
+  document.getElementById('acf-name').value = a.name;
+  document.getElementById('acf-bank').value = a.bank || '';
+  document.getElementById('acf-type').value = a.type;
+  document.getElementById('acf-remainder').checked = a.isRemainder;
+  document.getElementById('acf-fixed').value = a.isRemainder ? '' : a.fixedAmt;
+  document.getElementById('acf-fixed-wrap').style.display = a.isRemainder ? 'none' : 'flex';
+  openForm('acct-form');
+}
+
+function deleteAccount(i) {
+  if (!confirm('Remove this account?')) return;
+  state.accounts.splice(i, 1);
+  saveState();
+  renderAccounts();
+  renderAll();
+  toast('Account removed');
+}
+
+// ══════════════════════════════════════
+// PAYCHECK / DEPOSIT BREAKDOWN
+// ══════════════════════════════════════
+function onPaycheckChange() {
+  // live preview while typing
+  renderDepositBreakdown(parseFloat(document.getElementById('paycheckAmount').value) || 0);
+}
+
+function savePaycheck() {
+  const amt = parseFloat(document.getElementById('paycheckAmount').value);
+  if (isNaN(amt) || amt <= 0) { toast('Enter a valid paycheck amount'); return; }
+  const d = getPeriodData();
+  d.paycheckAmount = amt;
+  saveState();
+  renderAll();
+  toast('Paycheck saved!');
+}
+
+function renderDepositBreakdown(gross) {
+  const wrap = document.getElementById('acct-deposit-breakdown');
+  const rows = document.getElementById('acct-deposit-rows');
+  if (!state.accounts.length || gross <= 0) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  let remaining = gross;
+  const fixedAccounts = state.accounts.filter(a => !a.isRemainder);
+  const remainderAcct = state.accounts.find(a => a.isRemainder);
+
+  fixedAccounts.forEach(a => { remaining -= a.fixedAmt; });
+
+  let html = fixedAccounts.map(a => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);">
+      <div>
+        <span style="font-size:14px;font-weight:500;color:var(--text);">${a.name}</span>
+        <span style="font-size:11px;color:var(--text3);margin-left:6px;">${a.bank||''} · ${a.type}</span>
+      </div>
+      <span style="font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--green);">+$${a.fixedAmt.toFixed(2)}</span>
+    </div>
+  `).join('');
+
+  if (remainderAcct) {
+    const remAmt = remaining;
+    html += `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--amber-light);border:1px solid var(--amber);border-radius:var(--radius-sm);">
+        <div>
+          <span style="font-size:14px;font-weight:500;color:var(--text);">${remainderAcct.name}</span>
+          <span style="font-size:11px;color:var(--amber);margin-left:6px;">remainder · ${remainderAcct.type}</span>
+        </div>
+        <span style="font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--amber);">+$${remAmt.toFixed(2)}</span>
+      </div>`;
+  }
+
+  // Total check
+  html += `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-top:1px solid var(--border);margin-top:2px;">
+      <span style="font-size:12px;color:var(--text3);">Total deposited</span>
+      <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--text);">$${gross.toFixed(2)}</span>
+    </div>`;
+
+  rows.innerHTML = html;
+}
+
+// ══════════════════════════════════════
+// PERIOD FILTER LOGIC
+// ══════════════════════════════════════
+function matchesPeriod(entry, fieldWithCheck) {
+  const p = state.currentPeriod;
+  if (p === 'month') return true;
+  const check = entry[fieldWithCheck] || entry.check || '';
+  if (check === 'both' || check === 'split') return true;
+  if (p === '1st' && check === '1st') return true;
+  if (p === '16th' && check === '16th') return true;
+  return false;
+}
+
+function entryAmountForPeriod(entry) {
+  const p = state.currentPeriod;
+  const check = entry.check || '';
+  if (p !== 'month' && (check === 'split')) return entry.amount / 2;
+  return entry.amount;
+}
+
+// ══════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════
+function renderEntryList(containerId, entries, type, amountClass) {
+  const el = document.getElementById(containerId);
+  const filtered = type === 'gas' || type === 'groceries' || type === 'misc'
+    ? entries
+    : entries.filter(e => matchesPeriod(e, 'check'));
+
+  if (!filtered.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:6px 0;">Nothing added yet.</div>';
+    return;
+  }
+
+  const checkColors = { '1st': '#4a90d9', '16th': '#9b59b6', 'split': '#e09040', 'both': '#e09040' };
+
+  el.innerHTML = filtered.map(e => {
+    const amt = entryAmountForPeriod(e);
+    const dotColor = checkColors[e.check] || '#888';
+    const meta = e.date ? `<span class="entry-meta">${e.date}</span>` :
+                 e.category ? `<span class="entry-meta">${e.category}</span>` :
+                 e.check ? `<span class="entry-meta">${e.check==='split'?'split':e.check==='both'?'both checks':e.check}</span>` : '';
+    return `
+      <div class="entry-row">
+        ${e.check ? `<span class="entry-dot" style="background:${dotColor}"></span>` : '<span style="width:8px"></span>'}
+        <span class="entry-name">${e.name}</span>
+        ${meta}
+        <span class="entry-amount ${amountClass}">$${amt.toFixed(2)}</span>
+        <div class="entry-actions">
+          <button class="del-btn" onclick="deleteEntry('${type}', ${e.id})">✕</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function sumEntries(entries, type) {
+  const p = state.currentPeriod;
+  let total = 0;
+  const filtered = type === 'gas' || type === 'groceries' || type === 'misc'
+    ? entries
+    : entries.filter(e => matchesPeriod(e, 'check'));
+  filtered.forEach(e => { total += entryAmountForPeriod(e); });
+  return total;
+}
+
+function renderAccountSplit() {
+  const d = getPeriodData();
+  const gross = d.paycheckAmount || 0;
+  renderDepositBreakdown(gross);
+}
+
+function renderAll() {
+  const d = getPeriodData();
+
+  // Always sync paycheck field from saved state
+  const paycheckEl = document.getElementById('paycheckAmount');
+  if (paycheckEl) {
+    paycheckEl.value = d.paycheckAmount ? d.paycheckAmount.toFixed(2) : '';
+  }
+
+  renderEntryList('income-list', d.income, 'income', 'amt-income');
+  renderEntryList('bills-list', d.bills, 'bills', 'amt-expense');
+  renderEntryList('subs-list', d.subs, 'subs', 'amt-expense');
+  renderEntryList('gas-list', d.gas, 'gas', 'amt-expense');
+  renderEntryList('groceries-list', d.groceries, 'groceries', 'amt-expense');
+  renderEntryList('misc-list', d.misc, 'misc', 'amt-expense');
+  renderAccountSplit();
+
+  // Total income = paycheck + other income entries
+  const paycheck = d.paycheckAmount || 0;
+  const tOtherIncome = sumEntries(d.income, 'income');
+  const tIncome = paycheck + tOtherIncome;
+
+  const tBills = sumEntries(d.bills, 'bills');
+  const tSubs = sumEntries(d.subs, 'subs');
+  const tGas = sumEntries(d.gas, 'gas');
+  const tGroceries = sumEntries(d.groceries, 'groceries');
+  const tMisc = sumEntries(d.misc, 'misc');
+  const tExpenses = tBills + tSubs + tGas + tGroceries + tMisc;
+  const remaining = tIncome - tExpenses;
+
+  document.getElementById('total-income').textContent = `$${tIncome.toFixed(2)}`;
+  document.getElementById('total-bills').textContent = `$${tBills.toFixed(2)}`;
+  document.getElementById('total-subs').textContent = `$${tSubs.toFixed(2)}`;
+  document.getElementById('total-gas').textContent = `$${tGas.toFixed(2)}`;
+  document.getElementById('total-groceries').textContent = `$${tGroceries.toFixed(2)}`;
+  document.getElementById('total-misc').textContent = `$${tMisc.toFixed(2)}`;
+
+  document.getElementById('sumIncome').textContent = `$${tIncome.toFixed(2)}`;
+  document.getElementById('sumSpent').textContent = `$${tExpenses.toFixed(2)}`;
+  document.getElementById('sumRemaining').textContent = `$${remaining.toFixed(2)}`;
+  document.getElementById('sumRemaining').style.color = remaining < 0 ? 'var(--red)' : remaining < tIncome * 0.1 ? 'var(--amber)' : 'var(--accent)';
+
+  const pct = tIncome > 0 ? Math.min((tExpenses / tIncome) * 100, 100) : 0;
+  const fill = document.getElementById('progressFill');
+  fill.style.width = pct.toFixed(1) + '%';
+  fill.className = 'progress-fill' + (pct >= 100 ? ' over' : pct >= 80 ? ' warn' : '');
+  document.getElementById('progressPct').textContent = pct.toFixed(0) + '%';
+}
+
+// ══════════════════════════════════════
+// HISTORY
+// ══════════════════════════════════════
+function saveCurrentMonth() {
+  const d = getPeriodData();
+  const key = `${state.currentYear}-${String(state.currentMonth+1).padStart(2,'0')}`;
+  const label = `${MONTHS[state.currentMonth]} ${state.currentYear}`;
+
+  const tIncome = sumEntries(d.income, 'income');
+  const tExp = sumEntries(d.bills,'bills') + sumEntries(d.subs,'subs') +
+               sumEntries(d.gas,'gas') + sumEntries(d.groceries,'groceries') + sumEntries(d.misc,'misc');
+
+  if (!state.history) state.history = {};
+  state.history[key] = { label, income: tIncome, expenses: tExp };
+  saveState();
+  renderHistory();
+  toast('Month saved to history!');
+}
+
+function renderHistory() {
+  const tbody = document.getElementById('historyBody');
+  if (!state.history || !Object.keys(state.history).length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px;">No history yet.</td></tr>';
+    return;
+  }
+  const sorted = Object.entries(state.history).sort((a,b) => b[0].localeCompare(a[0]));
+  tbody.innerHTML = sorted.map(([k,h]) => {
+    const net = h.income - h.expenses;
+    return `<tr>
+      <td>${h.label}</td>
+      <td class="mono positive">$${h.income.toFixed(2)}</td>
+      <td class="mono negative">$${h.expenses.toFixed(2)}</td>
+      <td class="mono ${net>=0?'positive':'negative'}">${net>=0?'+':''}$${net.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  loadState();
+  const theme = localStorage.getItem('pcp_theme');
+  if (theme === 'dark') document.documentElement.setAttribute('data-theme','dark');
+  updatePeriodDisplay();
+  // Always render everything on load regardless of active tab
+  renderAccounts();
+  renderAll();
+  renderHistory();
+  // Restore last active tab (default to budget)
+  const savedTab = state.activeTab || 'budget';
+  showTab(savedTab);
+  // Restore period pill UI state
+  ['1st','16th','month'].forEach(x => {
+    document.getElementById('pill-'+x).classList.toggle('active', x === (state.currentPeriod || '1st'));
+  });
+});
+</script>
+</body>
+</html>
