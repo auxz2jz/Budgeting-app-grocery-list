@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayCheck Planner</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
+  :root {
+    --bg:#f5f4f0; --surface:#fff; --surface2:#f0efe9; --border:#e2e0d8;
+    --text:#1a1916; --text2:#6b6960; --text3:#9b9a92;
+    --accent:#2a5caa; --accent-light:#e8eef8;
+    --green:#1a7a4a; --green-light:#e6f4ec;
+    --red:#b83232; --red-light:#faeaea;
+    --amber:#a05c10; --amber-light:#fdf0e0;
+    --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+    --radius:10px; --radius-sm:6px;
+  }
+  [data-theme="dark"] {
+    --bg:#141412; --surface:#1e1d1a; --surface2:#272622; --border:#333230;
+    --text:#f0efe9; --text2:#9b9a92; --text3:#6b6960;
+    --accent:#5b8fd4; --accent-light:#1a2640;
+    --green:#3dba75; --green-light:#0e2a1c;
+    --red:#e06060; --red-light:#2a1212;
+    --amber:#e09040; --amber-light:#2a1e0a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.5;}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+  .topbar-brand{font-size:17px;font-weight:600;letter-spacing:-.3px;color:var(--text);}
+  .topbar-brand span{color:var(--accent);}
+  .topbar-actions{display:flex;gap:8px;}
+  .icon-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:background .15s;}
+  .icon-btn:hover{background:var(--border);}
+  .period-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .period-label{font-size:13px;color:var(--text2);font-weight:500;}
+  .period-pills{display:flex;gap:6px;flex-wrap:wrap;}
+  .pill{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--text2);transition:all .15s;}
+  .pill.active{background:var(--accent);border-color:var(--accent);color:white;}
+  .period-nav{display:flex;gap:4px;margin-left:auto;align-items:center;}
+  .period-nav button{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);width:30px;height:30px;cursor:pointer;font-size:14px;color:var(--text);}
+  .period-current{font-size:14px;font-weight:500;color:var(--text);min-width:130px;text-align:center;}
+  .tab-bar{display:flex;border-bottom:1px solid var(--border);background:var(--surface);padding:0 16px;overflow-x:auto;}
+  .tab-btn{padding:12px 14px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:'DM Sans',sans-serif;transition:color .15s;}
+  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+  .main{max-width:720px;margin:0 auto;padding:16px;}
+  .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+  .summary-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);}
+  .s-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:6px;font-weight:500;}
+  .s-value{font-size:22px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-.5px;}
+  .s-income .s-value{color:var(--green);}
+  .s-spent .s-value{color:var(--red);}
+  .s-remaining .s-value{color:var(--accent);}
+  .s-sub{font-size:11px;color:var(--text3);margin-top:3px;}
+  @media(max-width:480px){.summary-grid{grid-template-columns:1fr 1fr;}.summary-grid .s-remaining{grid-column:span 2;}.s-value{font-size:18px;}}
+  .budget-progress{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px;box-shadow:var(--shadow);}
+  .progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;color:var(--text2);}
+  .progress-track{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:4px;background:var(--green);transition:width .4s ease;}
+  .progress-fill.warn{background:var(--amber);}
+  .progress-fill.over{background:var(--red);}
+  .section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;box-shadow:var(--shadow);overflow:hidden;}
+  .section-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;user-select:none;border-bottom:1px solid transparent;transition:background .1s;}
+  .section-header:hover{background:var(--surface2);}
+  .section-header.open{border-bottom-color:var(--border);}
+  .section-header-left{display:flex;align-items:center;gap:10px;}
+  .section-icon{width:32px;height:32px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .icon-income{background:var(--green-light);}
+  .icon-bills{background:var(--red-light);}
+  .icon-fuel{background:var(--amber-light);}
+  .icon-sub{background:var(--accent-light);}
+  .icon-misc{background:var(--surface2);}
+  .section-title{font-weight:500;font-size:15px;}
+  .section-total{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--text2);}
+  .section-total.income-total{color:var(--green);}
+  .section-total.expense-total{color:var(--red);}
+  .chevron{font-size:11px;color:var(--text3);transition:transform .2s;margin-left:8px;}
+  .chevron.open{transform:rotate(180deg);}
+  .section-body{display:none;padding:12px 16px;}
+  .section-body.open{display:block;}
+  .entry-list{display:flex;flex-direction:column;gap:2px;margin-bottom:4px;}
+  .entry-row{display:flex;align-items:center;padding:9px 10px;border-radius:var(--radius-sm);gap:8px;transition:background .1s;flex-wrap:wrap;}
+  .entry-row:hover{background:var(--surface2);}
+  .entry-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .entry-name{flex:1;font-size:14px;color:var(--text);min-width:80px;}
+  .tag{font-size:11px;padding:2px 7px;border-radius:8px;white-space:nowrap;font-weight:500;}
+  .tag-acct{background:var(--accent-light);color:var(--accent);}
+  .tag-recur{background:var(--green-light);color:var(--green);}
+  .entry-amount{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;min-width:72px;text-align:right;}
+  .amt-income{color:var(--green);}
+  .amt-expense{color:var(--red);}
+  .entry-actions{display:flex;gap:4px;opacity:0;transition:opacity .15s;}
+  .entry-row:hover .entry-actions{opacity:1;}
+  .entry-actions button{background:none;border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:11px;cursor:pointer;color:var(--text2);font-family:'DM Sans',sans-serif;}
+  .entry-actions .del-btn:hover{border-color:var(--red);color:var(--red);}
+  .add-row{margin-top:8px;}
+  .btn-add{background:var(--accent-light);border:1px dashed var(--accent);border-radius:var(--radius-sm);padding:8px 14px;font-size:13px;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;width:100%;text-align:left;transition:background .15s;}
+  .btn-add:hover{background:var(--accent);color:white;}
+  .add-form{display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-top:8px;gap:8px;flex-wrap:wrap;}
+  .add-form.open{display:flex;}
+  .add-form input,.add-form select{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;}
+  .add-form input:focus,.add-form select:focus{border-color:var(--accent);}
+  .f-name{flex:2;min-width:120px;}
+  .f-amount{flex:1;min-width:80px;}
+  .f-select{flex:1.5;min-width:110px;}
+  .f-full{width:100%;}
+  .f-actions{display:flex;gap:8px;width:100%;align-items:center;flex-wrap:wrap;}
+  .btn-save{background:var(--accent);color:white;border:none;border-radius:var(--radius-sm);padding:7px 16px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;}
+  .btn-cancel{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px;font-size:13px;cursor:pointer;color:var(--text2);font-family:'DM Sans',sans-serif;}
+  .check-legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:var(--text2);}
+  .check-legend span{display:flex;align-items:center;gap:5px;}
+  .legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .divider-lbl{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 6px;}
+  .info-box{background:var(--accent-light);border:1px solid var(--accent);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--accent);}
+  .history-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .history-table th{text-align:left;padding:8px 10px;color:var(--text3);font-weight:500;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.4px;}
+  .history-table td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text);}
+  .history-table tr:last-child td{border-bottom:none;}
+  .history-table tr:hover td{background:var(--surface2);}
+  .mono{font-family:'DM Mono',monospace;font-size:13px;}
+  .positive{color:var(--green);}
+  .negative{color:var(--red);}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;pointer-events:none;transition:opacity .2s;z-index:999;white-space:nowrap;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">Pay<span>Check</span> Planner</div>
+  <div class="topbar-actions">
+    <button class="icon-btn" onclick="toggleTheme()" title="Dark mode">🌙</button>
+    <button class="icon-btn" onclick="showTab('history')" title="History">📅</button>
+    <button class="icon-btn" onclick="showTab('accounts')" title="Accounts">🏦</button>
+  </div>
+</div>
+
+<div class="period-bar">
+  <span class="period-label">Pay period:</span>
+  <div class="period-pills">
+    <button class="pill active" id="pill-1st" onclick="setPeriod('1st')">1st – 15th</button>
+    <button class="pill" id="pill-16th" onclick="setPeriod('16th')">16th – EOM</button>
+    <button class="pill" id="pill-month" onclick="setPeriod('month')">Full Month</button>
+  </div>
+  <div class="period-nav">
+    <button onclick="changeMonth(-1)">&#8249;</button>
+    <span class="period-current" id="periodDisplay">April 2026</span>
+    <button onclick="changeMonth(1)">&#8250;</button>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="budget" onclick="showTab('budget')">Budget</button>
+  <button class="tab-btn" data-tab="history" onclick="showTab('history')">History</button>
+  <button class="tab-btn" data-tab="accounts" onclick="showTab('accounts')">Accounts</button>
+  <button class="tab-btn" data-tab="templates" onclick="showTab('templates')">Recurring Bills</button>
+</div>
+
+<!-- ══ BUDGET TAB ══ -->
+<div class="tab-content active" id="tab-budget">
+<div class="main">
+  <div class="summary-grid">
+    <div class="summary-card s-income"><div class="s-label">Income</div><div class="s-value" id="sumIncome">$0</div><div class="s-sub">this period</div></div>
+    <div class="summary-card s-spent"><div class="s-label">Spent</div><div class="s-value" id="sumSpent">$0</div><div class="s-sub">all expenses</div></div>
+    <div class="summary-card s-remaining"><div class="s-label">Remaining</div><div class="s-value" id="sumRemaining">$0</div><div class="s-sub">available</div></div>
+  </div>
+  <div class="budget-progress">
+    <div class="progress-header"><span>Budget used</span><span id="progressPct">0%</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+
+  <!-- INCOME -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('income')">
+      <div class="section-header-left"><div class="section-icon icon-income">&#128176;</div><span class="section-title">Income</span></div>
+      <div style="display:flex;align-items:center;gap:6px;"><span class="section-total income-total" id="total-income">$0.00</span><span class="chevron" id="chev-income">&#9660;</span></div>
+    </div>
+    <div class="section-body" id="body-income">
+      <div class="divider-lbl">Gross Paycheck</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
+        <div style="flex:1;min-width:140px;position:relative;">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;">$</span>
+          <input type="number" id="paycheckAmount" placeholder="0.00" step="0.01" oninput="onPaycheckChange()"
+            style="width:100%;padding:9px 10px 9px 22px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:15px;font-family:'DM Mono',monospace;">
+        </div>
+        <button class="btn-save" onclick="savePaycheck()" style="padding:9px 18px;">Set Paycheck</button>
+      </div>
+      <div id="acct-deposit-breakdown" style="display:none;margin-bottom:14px;">
+        <div class="divider-lbl">Deposit Breakdown by Account</div>
+        <div id="acct-deposit-rows" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+      <div class="divider-lbl">Other Income</div>
+      <div class="entry-list" id="income-list"></div>
+      <div class="add-row"><button class="btn-add" onclick="openForm('income-form')">+ Add other income (bonus, side job...)</button></div>
+      <div class="add-form" id="income-form">
+        <input class="f-name" type="text" id="if-name" placeholder="Description">
+        <input class="f-amount" type="number" id="if-amount" placeholder="Amount" step="0.01">
+        <select class="f-select" id="if-check">
+          <option value="1st">With Check 1</option>
+          <option value="16th">With Check 2</option>
+          <option value="both">Both periods</option>
+        </select>
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveEntry('income')">Save</button>
+          <button class="btn-cancel" onclick="closeForm('income-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BILLS -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('bills')">
+      <div class="section-header-left"><div class="section-icon icon-bills">&#129534;</div><span class="section-title">Bills &amp; Loans</span></div>
+      <div style="display:flex;align-items:center;gap:6px;"><span class="section-total expense-total" id="total-bills">$0.00</span><span class="chevron" id="chev-bills">&#9660;</span></div>
+    </div>
+    <div class="section-body" id="body-bills">
+      <div class="check-legend">
+        <span><i class="legend-dot" style="background:#4a90d9"></i>Check 1</span>
+        <span><i class="legend-dot" style="background:#9b59b6"></i>Check 2</span>
+        <span><i class="legend-dot" style="background:var(--amber)"></i>Split</span>
+        <span style="font-size:11px;padding:2px 7px;background:var(--green-light);color:var(--green);border-radius:8px;font-weight:500;">&#8635; recurring</span>
+      </div>
+      <div class="entry-list" id="bills-list"></div>
+      <div class="add-row"><button class="btn-add" onclick="openExpenseForm('bills')">+ Add bill or loan payment</button></div>
+      <div class="add-form" id="bills-form">
+        <input class="f-name" type="text" id="bf-name" placeholder="Bill name (e.g. Car Loan)">
+        <input class="f-amount" type="number" id="bf-amount" placeholder="Amount" step="0.01">
+        <select class="f-select" id="bf-check">
+          <option value="1st">Check 1 (1st)</option>
+          <option value="16th">Check 2 (16th)</option>
+          <option value="split">Split 50/50</option>
+          <option value="both">Full — both checks</option>
+        </select>
+        <select class="f-select" id="bf-category">
+          <option value="loan">Loan</option>
+          <option value="utility">Utility</option>
+          <option value="credit">Credit Card</option>
+          <option value="family">Family</option>
+          <option value="other">Other</option>
+        </select>
+        <select class="f-select" id="bf-account"><option value="">No account</option></select>
+        <div class="f-actions">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;">
+            <input type="checkbox" id="bf-recur" style="width:auto;" checked> Recurring every month
+          </label>
+        </div>
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveEntry('bills')">Save</button>
+          <button class="btn-cancel" onclick="closeForm('bills-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUBSCRIPTIONS -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('subs')">
+      <div class="section-header-left"><div class="section-icon icon-sub">&#128241;</div><span class="section-title">Subscriptions</span></div>
+      <div style="display:flex;align-items:center;gap:6px;"><span class="section-total expense-total" id="total-subs">$0.00</span><span class="chevron" id="chev-subs">&#9660;</span></div>
+    </div>
+    <div class="section-body" id="body-subs">
+      <div class="entry-list" id="subs-list"></div>
+      <div class="add-row"><button class="btn-add" onclick="openExpenseForm('subs')">+ Add subscription</button></div>
+      <div class="add-form" id="subs-form">
+        <input class="f-name" type="text" id="sf-name" placeholder="Subscription name">
+        <input class="f-amount" type="number" id="sf-amount" placeholder="Monthly cost" step="0.01">
+        <select class="f-select" id="sf-check">
+          <option value="1st">Paid from Check 1</option>
+          <option value="16th">Paid from Check 2</option>
+          <option value="split">Split 50/50</option>
+        </select>
+        <select class="f-select" id="sf-account"><option value="">No account</option></select>
+        <div class="f-actions">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;">
+            <input type="checkbox" id="sf-recur" style="width:auto;" checked> Recurring every month
+          </label>
+        </div>
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveEntry('subs')">Save</button>
+          <button class="btn-cancel" onclick="closeForm('subs-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAS -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('gas')">
+      <div class="section-header-left"><div class="section-icon icon-fuel">&#9981;</div><span class="section-title">Gas</span></div>
+      <div style="display:flex;align-items:center;gap:6px;"><span class="section-total expense-total" id="total-gas">$0.00</span><span class="chevron" id="chev-gas">&#9660;</span></div>
+    </div>
+    <div class="section-body" id="body-gas">
+      <div class="entry-list" id="gas-list"></div>
+      <div class="add-row"><button class="btn-add" onclick="openExpenseForm('gas')">+ Add gas purchase</button></div>
+      <div class="add-form" id="gas-form">
+        <input class="f-name" type="text" id="gf-name" placeholder="e.g. Shell – Main car">
+        <input class="f-amount" type="number" id="gf-amount" placeholder="Amount" step="0.01">
+        <input class="f-select" type="date" id="gf-date">
+        <select class="f-select" id="gf-account"><option value="">No account</option></select>
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveEntry('gas')">Save</button>
+          <button class="btn-cancel" onclick="closeForm('gas-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GROCERIES -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('groceries')">
+      <div class="section-header-left"><div class="section-icon icon-misc">&#128722;</div><span class="section-title">Groceries</span></div>
+      <div style="display:flex;align-items:center;gap:6px;"><span class="section-total expense-total" id="total-groceries">$0.00</span><span class="chevron" id="chev-groceries">&#9660;</span></div>
+    </div>
+    <div class="section-body" id="body-groceries">
+      <div class="entry-list" id="groceries-list"></div>
+      <div class="add-row"><button class="btn-add" onclick="openExpenseForm('groceries')">+ Add grocery run</button></div>
+      <div class="add-form" id="groceries-form">
+        <input class="f-name" type="text" id="grof-name" placeholder="e.g. Walmart grocery run">
+        <input class="f-amount" type="number" id="grof-amount" placeholder="Amount" step="0.01">
+        <input class="f-select" type="date" id="grof-date">
+        <select class="f-select" id="grof-account"><option value="">No account</option></select>
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveEntry('groceries')">Save</button>
+          <button class="btn-cancel" onclick="closeForm('groceries-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RANDOM PURCHASES -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('misc')">
+      <div class="section-header-left"><div class="section-icon icon-misc">&#128717;</div><span class="section-title">Random Purchases</span></div>
+      <div style="display:flex;align-items:center;gap:6px;"><span class="section-total expense-total" id="total-misc">$0.00</span><span class="chevron" id="chev-misc">&#9660;</span></div>
+    </div>
+    <div class="section-body" id="body-misc">
+      <div class="entry-list" id="misc-list"></div>
+      <div class="add-row"><button class="btn-add" onclick="openExpenseForm('misc')">+ Add purchase (fast food, store run...)</button></div>
+      <div class="add-form" id="misc-form">
+        <input class="f-name" type="text" id="mf-name" placeholder="e.g. McDonald's, 7-Eleven">
+        <input class="f-amount" type="number" id="mf-amount" placeholder="Amount" step="0.01">
+        <select class="f-select" id="mf-category">
+          <option value="fastfood">Fast Food</option>
+          <option value="dining">Dining Out</option>
+          <option value="shopping">Shopping</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="medical">Medical</option>
+          <option value="other">Other</option>
+        </select>
+        <input class="f-select" type="date" id="mf-date">
+        <select class="f-select" id="mf-account"><option value="">No account</option></select>
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveEntry('misc')">Save</button>
+          <button class="btn-cancel" onclick="closeForm('misc-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ HISTORY TAB ══ -->
+<div class="tab-content" id="tab-history">
+<div class="main">
+  <div class="section">
+    <div class="section-header open" style="cursor:default;">
+      <div class="section-header-left"><div class="section-icon icon-income">&#128197;</div><span class="section-title">Monthly History</span></div>
+    </div>
+    <div class="section-body open" style="padding:0;">
+      <table class="history-table">
+        <thead><tr><th>Month</th><th>Income</th><th>Expenses</th><th>Net</th></tr></thead>
+        <tbody id="historyBody"><tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px;">No history saved yet.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-top:12px;box-shadow:var(--shadow);">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:10px;">Snapshot the current month's totals into history. Re-saving updates the existing record.</div>
+    <button class="btn-save" onclick="saveCurrentMonth()" style="padding:10px 24px;font-size:14px;width:100%;">&#128190; Save This Month to History</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ ACCOUNTS TAB ══ -->
+<div class="tab-content" id="tab-accounts">
+<div class="main">
+  <div class="info-box"><strong>Account Balances:</strong> Each account shows this period's deposits in, total expenses tagged to it, and the resulting balance. Accounts are permanent — set once, used forever.</div>
+  <div id="acct-balance-list"></div>
+  <div class="section">
+    <div class="section-header open" style="cursor:default;">
+      <div class="section-header-left"><div class="section-icon icon-income">&#127974;</div><span class="section-title">Manage Accounts</span></div>
+    </div>
+    <div class="section-body open">
+      <div id="acct-list"></div>
+      <div class="add-row" style="margin-top:10px;"><button class="btn-add" onclick="openForm('acct-form')">+ Add account / institution</button></div>
+      <div class="add-form" id="acct-form">
+        <input class="f-name" type="text" id="acf-name" placeholder="Account nickname (e.g. Chase Checking)">
+        <input class="f-name" type="text" id="acf-bank" placeholder="Bank / Institution name">
+        <select class="f-select" id="acf-type">
+          <option value="checking">Checking</option>
+          <option value="savings">Savings</option>
+        </select>
+        <div style="width:100%;">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;">
+            <input type="checkbox" id="acf-remainder" onchange="toggleRemainderField()" style="width:auto;">
+            This account receives the <strong>remainder</strong> (auto-calculated)
+          </label>
+        </div>
+        <div id="acf-fixed-wrap" style="width:100%;display:flex;gap:8px;align-items:center;">
+          <input class="f-amount" type="number" id="acf-fixed" placeholder="Fixed deposit per check" step="0.01" style="flex:1;">
+          <span style="font-size:12px;color:var(--text3);white-space:nowrap;">same every check</span>
+        </div>
+        <div class="f-actions">
+          <button class="btn-save" onclick="saveAccount()">Save Account</button>
+          <button class="btn-cancel" onclick="closeForm('acct-form')">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ RECURRING BILLS TAB ══ -->
+<div class="tab-content" id="tab-templates">
+<div class="main">
+  <div class="info-box"><strong>Recurring Bills &amp; Subscriptions:</strong> These auto-appear every pay period. Add them once on the Budget tab with "Recurring every month" checked. Remove them here if they ever end. If an amount changes for one month only, edit it on the Budget tab — it won't affect the template.</div>
+  <div class="section">
+    <div class="section-header open" style="cursor:default;">
+      <div class="section-header-left"><div class="section-icon icon-bills">&#129534;</div><span class="section-title">Recurring Bills &amp; Loans</span></div>
+      <span class="section-total expense-total" id="tmpl-bills-total">$0.00</span>
+    </div>
+    <div class="section-body open"><div id="tmpl-bills-list" class="entry-list"></div></div>
+  </div>
+  <div class="section">
+    <div class="section-header open" style="cursor:default;">
+      <div class="section-header-left"><div class="section-icon icon-sub">&#128241;</div><span class="section-title">Recurring Subscriptions</span></div>
+      <span class="section-total expense-total" id="tmpl-subs-total">$0.00</span>
+    </div>
+    <div class="section-body open"><div id="tmpl-subs-list" class="entry-list"></div></div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const CC={'1st':'#4a90d9','16th':'#9b59b6','split':'#a05c10','both':'#a05c10'};
+
+let state={
+  currentMonth:3, currentYear:2026, currentPeriod:'1st', activeTab:'budget',
+  accounts:[], templates:{bills:[],subs:[]}, data:{}, history:{}
+};
+
+function periodKey(){return `${state.currentYear}-${String(state.currentMonth+1).padStart(2,'0')}-${state.currentPeriod}`;}
+function getPeriodData(){
+  const k=periodKey();
+  if(!state.data[k]) state.data[k]={paycheckAmount:0,income:[],bills:[],subs:[],gas:[],groceries:[],misc:[]};
+  return state.data[k];
+}
+
+// Effective bills = templates merged with any period overrides + non-recurring entries
+function getEffective(type){
+  const d=getPeriodData();
+  const overrides={};
+  (d[type]||[]).forEach(b=>{if(b.templateId) overrides[b.templateId]=b;});
+  const result=[];
+  state.templates[type].forEach(t=>{
+    result.push(overrides[t.id]?{...overrides[t.id],recurring:true}:{...t,templateId:t.id,recurring:true});
+  });
+  (d[type]||[]).forEach(b=>{if(!b.templateId) result.push(b);});
+  return result;
+}
+
+function saveState(){localStorage.setItem('pcp_v4',JSON.stringify(state));}
+function loadState(){
+  const s=localStorage.getItem('pcp_v4');
+  if(s){try{state=JSON.parse(s);}catch(e){}}
+  if(!state.templates) state.templates={bills:[],subs:[]};
+  if(!state.accounts) state.accounts=[];
+  if(!state.history) state.history={};
+}
+
+function toggleTheme(){
+  const d=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',d?'':'dark');
+  localStorage.setItem('pcp_theme',d?'light':'dark');
+}
+
+function setPeriod(p){
+  state.currentPeriod=p;
+  ['1st','16th','month'].forEach(x=>document.getElementById('pill-'+x).classList.toggle('active',x===p));
+  renderAll(); saveState();
+}
+function changeMonth(dir){
+  state.currentMonth+=dir;
+  if(state.currentMonth>11){state.currentMonth=0;state.currentYear++;}
+  if(state.currentMonth<0){state.currentMonth=11;state.currentYear--;}
+  updatePeriodDisplay(); renderAll(); saveState();
+}
+function updatePeriodDisplay(){
+  document.getElementById('periodDisplay').textContent=`${MONTHS[state.currentMonth]} ${state.currentYear}`;
+}
+
+function showTab(t){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  const c=document.getElementById('tab-'+t); if(c) c.classList.add('active');
+  const b=document.querySelector(`.tab-btn[data-tab="${t}"]`); if(b) b.classList.add('active');
+  if(t==='history') renderHistory();
+  if(t==='accounts') renderAccountBalances();
+  if(t==='budget') renderAll();
+  if(t==='templates') renderTemplates();
+  state.activeTab=t; saveState();
+}
+
+function toggleSection(id){
+  const body=document.getElementById('body-'+id);
+  const chev=document.getElementById('chev-'+id);
+  const hdr=body.previousElementSibling;
+  const open=body.classList.contains('open');
+  body.classList.toggle('open',!open);
+  if(chev) chev.classList.toggle('open',!open);
+  hdr.classList.toggle('open',!open);
+}
+
+function openForm(id){
+  document.getElementById(id).classList.add('open');
+  const today=new Date().toISOString().split('T')[0];
+  ['gf-date','grof-date','mf-date'].forEach(fid=>{
+    const el=document.getElementById(fid); if(el&&!el.value) el.value=today;
+  });
+}
+function closeForm(id){document.getElementById(id).classList.remove('open');}
+
+function openExpenseForm(type){
+  const map={bills:'bf-account',subs:'sf-account',gas:'gf-account',groceries:'grof-account',misc:'mf-account'};
+  const sel=document.getElementById(map[type]);
+  if(sel){
+    sel.innerHTML='<option value="">No account</option>';
+    state.accounts.forEach((a,i)=>{sel.innerHTML+=`<option value="${i}">${a.name}</option>`;});
+  }
+  openForm(type+'-form');
+}
+
+function matchesPeriod(e){
+  const p=state.currentPeriod; if(p==='month') return true;
+  const c=e.check||''; return c==='both'||c==='split'||c===p;
+}
+function amtFor(e){
+  if(state.currentPeriod!=='month'&&e.check==='split') return e.amount/2;
+  return e.amount;
+}
+
+function saveEntry(type){
+  const d=getPeriodData();
+  if(type==='income'){
+    const name=document.getElementById('if-name').value.trim();
+    const amount=parseFloat(document.getElementById('if-amount').value);
+    const check=document.getElementById('if-check').value;
+    if(!name||isNaN(amount)||amount<=0){toast('Enter name and amount');return;}
+    d.income.push({id:Date.now(),name,amount,check});
+    document.getElementById('if-name').value='';
+    document.getElementById('if-amount').value='';
+  } else if(type==='bills'){
+    const name=document.getElementById('bf-name').value.trim();
+    const amount=parseFloat(document.getElementById('bf-amount').value);
+    const check=document.getElementById('bf-check').value;
+    const category=document.getElementById('bf-category').value;
+    const acctIdx=document.getElementById('bf-account').value;
+    const recur=document.getElementById('bf-recur').checked;
+    if(!name||isNaN(amount)||amount<=0){toast('Enter name and amount');return;}
+    const entry={id:Date.now(),name,amount,check,category,acctIdx:acctIdx!==''?parseInt(acctIdx):null,recurring:recur};
+    if(recur) state.templates.bills.push(entry); else d.bills.push(entry);
+    document.getElementById('bf-name').value='';
+    document.getElementById('bf-amount').value='';
+  } else if(type==='subs'){
+    const name=document.getElementById('sf-name').value.trim();
+    const amount=parseFloat(document.getElementById('sf-amount').value);
+    const check=document.getElementById('sf-check').value;
+    const acctIdx=document.getElementById('sf-account').value;
+    const recur=document.getElementById('sf-recur').checked;
+    if(!name||isNaN(amount)||amount<=0){toast('Enter name and amount');return;}
+    const entry={id:Date.now(),name,amount,check,acctIdx:acctIdx!==''?parseInt(acctIdx):null,recurring:recur};
+    if(recur) state.templates.subs.push(entry); else d.subs.push(entry);
+    document.getElementById('sf-name').value='';
+    document.getElementById('sf-amount').value='';
+  } else if(type==='gas'){
+    const name=document.getElementById('gf-name').value.trim()||'Gas';
+    const amount=parseFloat(document.getElementById('gf-amount').value);
+    const date=document.getElementById('gf-date').value;
+    const acctIdx=document.getElementById('gf-account').value;
+    if(isNaN(amount)||amount<=0){toast('Enter an amount');return;}
+    d.gas.push({id:Date.now(),name,amount,date,acctIdx:acctIdx!==''?parseInt(acctIdx):null});
+    document.getElementById('gf-amount').value='';
+  } else if(type==='groceries'){
+    const name=document.getElementById('grof-name').value.trim()||'Groceries';
+    const amount=parseFloat(document.getElementById('grof-amount').value);
+    const date=document.getElementById('grof-date').value;
+    const acctIdx=document.getElementById('grof-account').value;
+    if(isNaN(amount)||amount<=0){toast('Enter an amount');return;}
+    d.groceries.push({id:Date.now(),name,amount,date,acctIdx:acctIdx!==''?parseInt(acctIdx):null});
+    document.getElementById('grof-amount').value='';
+  } else if(type==='misc'){
+    const name=document.getElementById('mf-name').value.trim();
+    const amount=parseFloat(document.getElementById('mf-amount').value);
+    const category=document.getElementById('mf-category').value;
+    const date=document.getElementById('mf-date').value;
+    const acctIdx=document.getElementById('mf-account').value;
+    if(!name||isNaN(amount)||amount<=0){toast('Enter name and amount');return;}
+    d.misc.push({id:Date.now(),name,amount,category,date,acctIdx:acctIdx!==''?parseInt(acctIdx):null});
+    document.getElementById('mf-name').value='';
+    document.getElementById('mf-amount').value='';
+  }
+  saveState(); renderAll();
+  if(type==='bills'||type==='subs') renderTemplates();
+  toast('Saved!');
+}
+
+function deleteEntry(type,id){
+  const d=getPeriodData();
+  if(type==='bills'||type==='subs'){
+    const ti=state.templates[type].findIndex(t=>t.id===id);
+    if(ti>=0) state.templates[type].splice(ti,1);
+    else d[type]=(d[type]||[]).filter(e=>e.id!==id);
+  } else {
+    d[type]=(d[type]||[]).filter(e=>e.id!==id);
+  }
+  saveState(); renderAll();
+  if(type==='bills'||type==='subs') renderTemplates();
+  toast('Deleted');
+}
+
+function deleteTemplate(type,id){
+  state.templates[type]=state.templates[type].filter(t=>t.id!==id);
+  saveState(); renderAll(); renderTemplates(); toast('Recurring item removed');
+}
+
+function onPaycheckChange(){
+  renderDepositBreakdown(parseFloat(document.getElementById('paycheckAmount').value)||0);
+}
+function savePaycheck(){
+  const amt=parseFloat(document.getElementById('paycheckAmount').value);
+  if(isNaN(amt)||amt<=0){toast('Enter a valid paycheck amount');return;}
+  getPeriodData().paycheckAmount=amt;
+  saveState(); renderAll(); toast('Paycheck saved!');
+}
+
+function toggleRemainderField(){
+  const rem=document.getElementById('acf-remainder').checked;
+  document.getElementById('acf-fixed-wrap').style.display=rem?'none':'flex';
+}
+
+function saveAccount(){
+  const name=document.getElementById('acf-name').value.trim();
+  const bank=document.getElementById('acf-bank').value.trim();
+  const type=document.getElementById('acf-type').value;
+  const isRemainder=document.getElementById('acf-remainder').checked;
+  const fixedAmt=parseFloat(document.getElementById('acf-fixed').value);
+  if(!name){toast('Enter account name');return;}
+  if(!isRemainder&&(isNaN(fixedAmt)||fixedAmt<0)){toast('Enter a fixed deposit amount (or mark as Remainder)');return;}
+  if(isRemainder&&state.accounts.some(a=>a.isRemainder)){toast('You already have a Remainder account');return;}
+  state.accounts.push({id:Date.now(),name,bank,type,isRemainder,fixedAmt:isRemainder?0:fixedAmt});
+  document.getElementById('acf-name').value='';
+  document.getElementById('acf-bank').value='';
+  document.getElementById('acf-fixed').value='';
+  document.getElementById('acf-remainder').checked=false;
+  document.getElementById('acf-fixed-wrap').style.display='flex';
+  saveState(); renderAccountBalances(); closeForm('acct-form'); renderAll(); toast('Account added');
+}
+
+function editAccount(i){
+  const a=state.accounts[i];
+  state.accounts.splice(i,1); saveState(); renderAccountBalances();
+  document.getElementById('acf-name').value=a.name;
+  document.getElementById('acf-bank').value=a.bank||'';
+  document.getElementById('acf-type').value=a.type;
+  document.getElementById('acf-remainder').checked=a.isRemainder;
+  document.getElementById('acf-fixed').value=a.isRemainder?'':a.fixedAmt;
+  document.getElementById('acf-fixed-wrap').style.display=a.isRemainder?'none':'flex';
+  openForm('acct-form');
+}
+
+function deleteAccount(i){
+  if(!confirm('Remove this account?')) return;
+  state.accounts.splice(i,1); saveState(); renderAccountBalances(); renderAll(); toast('Account removed');
+}
+
+function renderDepositBreakdown(gross){
+  const wrap=document.getElementById('acct-deposit-breakdown');
+  const rows=document.getElementById('acct-deposit-rows');
+  if(!state.accounts.length||gross<=0){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  let rem=gross;
+  const fixed=state.accounts.filter(a=>!a.isRemainder);
+  const remAcct=state.accounts.find(a=>a.isRemainder);
+  fixed.forEach(a=>{rem-=a.fixedAmt;});
+  let html=fixed.map(a=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);">
+      <div><span style="font-size:14px;font-weight:500;color:var(--text);">${a.name}</span>
+      <span style="font-size:11px;color:var(--text3);margin-left:6px;">${a.bank||''} &middot; ${a.type}</span></div>
+      <span style="font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--green);">+$${a.fixedAmt.toFixed(2)}</span>
+    </div>`).join('');
+  if(remAcct) html+=`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--amber-light);border:1px solid var(--amber);border-radius:var(--radius-sm);">
+      <div><span style="font-size:14px;font-weight:500;color:var(--text);">${remAcct.name}</span>
+      <span style="font-size:11px;color:var(--amber);margin-left:6px;">remainder &middot; ${remAcct.type}</span></div>
+      <span style="font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--amber);">+$${rem.toFixed(2)}</span>
+    </div>`;
+  html+=`<div style="display:flex;justify-content:space-between;padding:6px 12px;border-top:1px solid var(--border);margin-top:2px;">
+    <span style="font-size:12px;color:var(--text3);">Total deposited</span>
+    <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--text);">$${gross.toFixed(2)}</span>
+  </div>`;
+  rows.innerHTML=html;
+}
+
+function renderAccountBalances(){
+  const container=document.getElementById('acct-balance-list');
+  const listEl=document.getElementById('acct-list');
+  if(!state.accounts.length){
+    container.innerHTML='';
+    if(listEl) listEl.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0;">No accounts yet. Add one below.</div>';
+    return;
+  }
+  const d=getPeriodData();
+  const gross=d.paycheckAmount||0;
+  const deposits={};
+  let rem=gross;
+  state.accounts.filter(a=>!a.isRemainder).forEach(a=>{deposits[a.id]=a.fixedAmt; rem-=a.fixedAmt;});
+  const remAcct=state.accounts.find(a=>a.isRemainder);
+  if(remAcct) deposits[remAcct.id]=rem;
+
+  const expenses={};
+  state.accounts.forEach(a=>{expenses[a.id]=0;});
+
+  function addExp(entries){
+    entries.forEach(e=>{
+      if(e.acctIdx!==null&&e.acctIdx!==undefined&&state.accounts[e.acctIdx]){
+        const aid=state.accounts[e.acctIdx].id;
+        expenses[aid]=(expenses[aid]||0)+amtFor(e);
+      }
+    });
+  }
+  addExp(getEffective('bills').filter(matchesPeriod));
+  addExp(getEffective('subs').filter(matchesPeriod));
+  addExp(d.gas||[]);
+  addExp(d.groceries||[]);
+  addExp(d.misc||[]);
+
+  container.innerHTML=state.accounts.map((a,i)=>{
+    const dep=deposits[a.id]||0;
+    const exp=expenses[a.id]||0;
+    const bal=dep-exp;
+    const bc=bal<0?'var(--red)':bal<dep*0.15?'var(--amber)':'var(--green)';
+    const typeBadge=a.type==='savings'?'background:var(--green-light);color:var(--green);':'background:var(--accent-light);color:var(--accent);';
+    return `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;box-shadow:var(--shadow);">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+        <div>
+          <div style="font-weight:500;font-size:15px;color:var(--text);">${a.name}${a.isRemainder?'<span style="font-size:10px;background:var(--amber-light);color:var(--amber);padding:2px 6px;border-radius:6px;font-weight:500;margin-left:6px;">REMAINDER</span>':''}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px;">${a.bank||''} &middot; ${a.type}</div>
+        </div>
+        <span style="font-size:11px;padding:3px 8px;border-radius:10px;font-weight:500;${typeBadge}">${a.type}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="text-align:center;padding:10px 8px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);margin-bottom:4px;">Deposited</div>
+          <div style="font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:var(--green);">$${dep.toFixed(2)}</div>
+        </div>
+        <div style="text-align:center;padding:10px 8px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);margin-bottom:4px;">Spent</div>
+          <div style="font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:var(--red);">$${exp.toFixed(2)}</div>
+        </div>
+        <div style="text-align:center;padding:10px 8px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);margin-bottom:4px;">Balance</div>
+          <div style="font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:${bc};">$${bal.toFixed(2)}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <button class="btn-cancel" onclick="editAccount(${i})" style="font-size:11px;padding:4px 10px;">Edit</button>
+        <button class="btn-cancel" onclick="deleteAccount(${i})" style="font-size:11px;padding:4px 10px;border-color:var(--red);color:var(--red);">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  if(listEl) listEl.innerHTML=state.accounts.map((a,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:13px;font-weight:500;color:var(--text);">${a.name} <span style="font-size:11px;color:var(--text3);font-weight:400;">${a.bank?'&middot; '+a.bank:''}</span></span>
+      <span style="font-size:12px;color:var(--text3);">${a.isRemainder?'Remainder':'$'+a.fixedAmt.toFixed(2)+'/check'}</span>
+    </div>`).join('');
+}
+
+function renderEntryList(containerId,entries,type){
+  const el=document.getElementById(containerId);
+  if(!entries.length){el.innerHTML=`<div style="color:var(--text3);font-size:13px;padding:6px 0;">Nothing added yet.</div>`;return;}
+  el.innerHTML=entries.map(e=>{
+    const amt=amtFor(e);
+    const acctName=(e.acctIdx!==null&&e.acctIdx!==undefined&&state.accounts[e.acctIdx])?state.accounts[e.acctIdx].name:null;
+    const dot=e.check?`<span class="entry-dot" style="background:${CC[e.check]||'#888'}"></span>`:'<span style="width:8px;flex-shrink:0;"></span>';
+    const isExp=type!=='income';
+    return `<div class="entry-row">
+      ${dot}
+      <span class="entry-name">${e.name}</span>
+      <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+        ${e.recurring?'<span class="tag tag-recur">&#8635; recurring</span>':''}
+        ${acctName?`<span class="tag tag-acct">${acctName}</span>`:''}
+        ${e.category?`<span class="tag" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border);">${e.category}</span>`:''}
+        ${e.date?`<span style="font-size:11px;color:var(--text3);">${e.date}</span>`:''}
+      </div>
+      <span class="entry-amount ${isExp?'amt-expense':'amt-income'}">${isExp?'- ':'+ '}$${amt.toFixed(2)}</span>
+      <div class="entry-actions"><button class="del-btn" onclick="deleteEntry('${type}',${e.id})">&#10005;</button></div>
+    </div>`;
+  }).join('');
+}
+
+function renderTemplates(){
+  function renderTmplList(listId,totalId,type){
+    const el=document.getElementById(listId);
+    const items=state.templates[type];
+    if(!items.length){
+      el.innerHTML=`<div style="color:var(--text3);font-size:13px;padding:6px 0;">No recurring ${type} yet. Add one on the Budget tab with "Recurring every month" checked.</div>`;
+      document.getElementById(totalId).textContent='$0.00'; return;
+    }
+    let total=0;
+    el.innerHTML=items.map(e=>{
+      total+=e.amount;
+      const acctName=(e.acctIdx!==null&&e.acctIdx!==undefined&&state.accounts[e.acctIdx])?state.accounts[e.acctIdx].name:null;
+      return `<div class="entry-row">
+        <span class="entry-dot" style="background:${CC[e.check]||'#888'}"></span>
+        <span class="entry-name">${e.name}</span>
+        <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+          <span class="tag tag-recur">&#8635; recurring</span>
+          ${acctName?`<span class="tag tag-acct">${acctName}</span>`:''}
+          <span class="tag" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border);">${e.check}</span>
+          ${e.category?`<span class="tag" style="background:var(--surface2);color:var(--text3);border:1px solid var(--border);">${e.category}</span>`:''}
+        </div>
+        <span class="entry-amount amt-expense">$${e.amount.toFixed(2)}</span>
+        <div class="entry-actions"><button class="del-btn" onclick="deleteTemplate('${type}',${e.id})">&#10005;</button></div>
+      </div>`;
+    }).join('');
+    document.getElementById(totalId).textContent='$'+total.toFixed(2);
+  }
+  renderTmplList('tmpl-bills-list','tmpl-bills-total','bills');
+  renderTmplList('tmpl-subs-list','tmpl-subs-total','subs');
+}
+
+function renderAll(){
+  const d=getPeriodData();
+  const pEl=document.getElementById('paycheckAmount');
+  if(pEl) pEl.value=d.paycheckAmount?d.paycheckAmount.toFixed(2):'';
+  renderDepositBreakdown(d.paycheckAmount||0);
+
+  const bills=getEffective('bills').filter(matchesPeriod);
+  const subs=getEffective('subs').filter(matchesPeriod);
+  const income=(d.income||[]).filter(matchesPeriod);
+  const gas=d.gas||[]; const groceries=d.groceries||[]; const misc=d.misc||[];
+
+  renderEntryList('income-list',income,'income');
+  renderEntryList('bills-list',bills,'bills');
+  renderEntryList('subs-list',subs,'subs');
+  renderEntryList('gas-list',gas,'gas');
+  renderEntryList('groceries-list',groceries,'groceries');
+  renderEntryList('misc-list',misc,'misc');
+
+  const tIncome=(d.paycheckAmount||0)+income.reduce((s,e)=>s+amtFor(e),0);
+  const tBills=bills.reduce((s,e)=>s+amtFor(e),0);
+  const tSubs=subs.reduce((s,e)=>s+amtFor(e),0);
+  const tGas=gas.reduce((s,e)=>s+e.amount,0);
+  const tGro=groceries.reduce((s,e)=>s+e.amount,0);
+  const tMisc=misc.reduce((s,e)=>s+e.amount,0);
+  const tExp=tBills+tSubs+tGas+tGro+tMisc;
+  const rem=tIncome-tExp;
+
+  document.getElementById('total-income').textContent='$'+tIncome.toFixed(2);
+  document.getElementById('total-bills').textContent='$'+tBills.toFixed(2);
+  document.getElementById('total-subs').textContent='$'+tSubs.toFixed(2);
+  document.getElementById('total-gas').textContent='$'+tGas.toFixed(2);
+  document.getElementById('total-groceries').textContent='$'+tGro.toFixed(2);
+  document.getElementById('total-misc').textContent='$'+tMisc.toFixed(2);
+  document.getElementById('sumIncome').textContent='$'+tIncome.toFixed(2);
+  document.getElementById('sumSpent').textContent='$'+tExp.toFixed(2);
+  document.getElementById('sumRemaining').textContent='$'+rem.toFixed(2);
+  document.getElementById('sumRemaining').style.color=rem<0?'var(--red)':rem<tIncome*0.1?'var(--amber)':'var(--accent)';
+  const pct=tIncome>0?Math.min((tExp/tIncome)*100,100):0;
+  const fill=document.getElementById('progressFill');
+  fill.style.width=pct.toFixed(1)+'%';
+  fill.className='progress-fill'+(pct>=100?' over':pct>=80?' warn':'');
+  document.getElementById('progressPct').textContent=pct.toFixed(0)+'%';
+}
+
+function saveCurrentMonth(){
+  const d=getPeriodData();
+  const key=`${state.currentYear}-${String(state.currentMonth+1).padStart(2,'0')}`;
+  const label=`${MONTHS[state.currentMonth]} ${state.currentYear}`;
+  const bills=getEffective('bills').filter(matchesPeriod);
+  const subs=getEffective('subs').filter(matchesPeriod);
+  const income=(d.income||[]).filter(matchesPeriod);
+  const tIncome=(d.paycheckAmount||0)+income.reduce((s,e)=>s+amtFor(e),0);
+  const tExp=bills.reduce((s,e)=>s+amtFor(e),0)+subs.reduce((s,e)=>s+amtFor(e),0)
+    +(d.gas||[]).reduce((s,e)=>s+e.amount,0)+(d.groceries||[]).reduce((s,e)=>s+e.amount,0)+(d.misc||[]).reduce((s,e)=>s+e.amount,0);
+  if(!state.history) state.history={};
+  state.history[key]={label,income:tIncome,expenses:tExp};
+  saveState(); renderHistory(); toast('Month saved to history!');
+}
+
+function renderHistory(){
+  const tbody=document.getElementById('historyBody');
+  if(!state.history||!Object.keys(state.history).length){
+    tbody.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px;">No history saved yet.</td></tr>'; return;
+  }
+  tbody.innerHTML=Object.entries(state.history).sort((a,b)=>b[0].localeCompare(a[0])).map(([k,h])=>{
+    const net=h.income-h.expenses;
+    return `<tr><td>${h.label}</td><td class="mono positive">$${h.income.toFixed(2)}</td><td class="mono negative">$${h.expenses.toFixed(2)}</td><td class="mono ${net>=0?'positive':'negative'}">${net>=0?'+':''}$${net.toFixed(2)}</td></tr>`;
+  }).join('');
+}
+
+let toastTimer;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),2000);
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  loadState();
+  const theme=localStorage.getItem('pcp_theme');
+  if(theme==='dark') document.documentElement.setAttribute('data-theme','dark');
+  updatePeriodDisplay();
+  ['1st','16th','month'].forEach(x=>document.getElementById('pill-'+x).classList.toggle('active',x===(state.currentPeriod||'1st')));
+  renderAll(); renderAccountBalances(); renderHistory(); renderTemplates();
+  showTab(state.activeTab||'budget');
+});
+</script>
+</body>
+</html>
